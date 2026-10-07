@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { withTimeout } from '@/lib/supabase/safe'
 import { geoapifyPlacesProvider } from '@/lib/places/geoapify'
 import { getArea, getAreaPlaces, normalizeCataloguePlace, type NormalizedCataloguePlace } from '@/lib/sidequest/catalogue'
 import { formatPrice } from '@/lib/sidequest/category-mapping'
@@ -77,7 +78,12 @@ function priceLabel(place: NormalizedCataloguePlace) {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const authResult = await withTimeout(
+      supabase.auth.getUser(),
+      5000,
+      'Login verification took too long',
+    )
+    const user = authResult.data.user
     if (!user) return NextResponse.json({ error: 'Sign in to generate a SideQuest.' }, { status: 401 })
 
     const body = await request.json() as { location?: string; area?: string; budget?: string; time?: string; people?: string; vibes?: string[]; intent?: SideQuestIntent; transport?: string; excludePlaceIds?: string[] }
@@ -96,11 +102,19 @@ export async function POST(request: Request) {
     // been migrated yet, generation still works and the UI reports the missing
     // persistence feature instead of silently breaking location matching.
     let entitlement: { plan?: string; quests_used?: number } | null = null
-    const entitlementResult = await supabase.from('subscriptions').select('plan,quests_used').eq('user_id', user.id).maybeSingle()
+    const entitlementResult = await withTimeout(
+      supabase.from('subscriptions').select('plan,quests_used').eq('user_id', user.id).maybeSingle(),
+      4000,
+      'Subscription check took too long',
+    ).catch(() => ({ data: null, error: { message: 'Subscription check unavailable' } }))
     if (!entitlementResult.error) {
       entitlement = entitlementResult.data
       if (!entitlement) {
-        const created = await supabase.from('subscriptions').insert({ user_id: user.id, plan: 'free', status: 'active', quests_used: 0 }).select('plan,quests_used').single()
+        const created = await withTimeout(
+          supabase.from('subscriptions').insert({ user_id: user.id, plan: 'free', status: 'active', quests_used: 0 }).select('plan,quests_used').single(),
+          4000,
+          'Subscription setup took too long',
+        ).catch(() => ({ data: null, error: { message: 'Subscription setup unavailable' } }))
         if (!created.error) entitlement = created.data
       }
       if ((entitlement?.plan ?? 'free') === 'free' && (entitlement?.quests_used ?? 0) >= 1) {
@@ -191,41 +205,55 @@ export async function POST(request: Request) {
 
     // Persist successful quests so Profile / History / Saved can show them again.
     // We only consume the free entitlement after a successful quest insert.
-    const questInsert = await supabase.from('quests').insert({
-      id: questId,
-      user_id: user.id,
-      title: quest.title,
-      city: 'London',
-      area: area.name,
-      budget,
-      time_minutes: duration,
-      people,
-      vibes,
-      total_cost: knownMin,
-      difficulty: quest.difficulty,
-    })
+    const questInsert = await withTimeout(
+      supabase.from('quests').insert({
+        id: questId,
+        user_id: user.id,
+        title: quest.title,
+        city: 'London',
+        area: area.name,
+        budget,
+        time_minutes: duration,
+        people,
+        vibes,
+        total_cost: knownMin,
+        difficulty: quest.difficulty,
+      }),
+      4000,
+      'Saving quest took too long',
+    ).catch(() => ({ error: { message: 'Quest persistence unavailable' } }))
+
     if (!questInsert.error) {
-      await supabase.from('quest_stops').insert(steps.map((step) => ({
-        quest_id: questId,
-        activity_id: null,
-        stop_number: step.number,
-        title: step.name,
-        description: JSON.stringify({
-          placeId: step.placeId,
-          address: step.address,
-          postcode: step.postcode,
-          activity: step.activity,
-          activityGroup: step.activityGroup,
-          intents: step.intents,
-          genres: step.genres,
-          priceLabel: step.priceLabel,
-          place: step.place,
-        }),
-        duration_minutes: step.duration,
-        cost: step.cost ?? 0,
-      })))
+      await withTimeout(
+        supabase.from('quest_stops').insert(steps.map((step) => ({
+          quest_id: questId,
+          activity_id: null,
+          stop_number: step.number,
+          title: step.name,
+          description: JSON.stringify({
+            placeId: step.placeId,
+            address: step.address,
+            postcode: step.postcode,
+            activity: step.activity,
+            activityGroup: step.activityGroup,
+            intents: step.intents,
+            genres: step.genres,
+            priceLabel: step.priceLabel,
+            place: step.place,
+          }),
+          duration_minutes: step.duration,
+          cost: step.cost ?? 0,
+        }))),
+        4000,
+        'Saving quest stops took too long',
+      ).catch(() => null)
+
       if (!entitlementResult.error && (entitlement?.plan ?? 'free') === 'free') {
-        await supabase.from('subscriptions').update({ quests_used: (entitlement?.quests_used ?? 0) + 1 }).eq('user_id', user.id)
+        await withTimeout(
+          supabase.from('subscriptions').update({ quests_used: (entitlement?.quests_used ?? 0) + 1 }).eq('user_id', user.id),
+          4000,
+          'Updating free quest usage took too long',
+        ).catch(() => null)
       }
     }
 
