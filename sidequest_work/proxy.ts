@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { withTimeout } from '@/lib/supabase/safe'
 
 function cleanEnv(value?: string) {
   if (!value) return ''
@@ -19,15 +20,12 @@ function isValidHttpUrl(value: string) {
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
-  // Prefer the server-only URL at runtime. This prevents a bad public env value
-  // from taking the whole website down before the user even reaches auth.
   const supabaseUrl = cleanEnv(process.env.SUPABASE_URL) || cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL)
   const supabaseKey =
     cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) ||
     cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
   if (!isValidHttpUrl(supabaseUrl) || !supabaseKey) {
-    console.error('[SideQuest] Supabase environment is invalid; skipping session refresh for this request.')
     return response
   }
 
@@ -45,15 +43,23 @@ export async function proxy(request: NextRequest) {
       },
     })
 
-    await supabase.auth.getUser()
+    // Never let Supabase make navigation hang. Public routes are not matched at all,
+    // and protected-route session refresh gets a short timeout.
+    await withTimeout(supabase.auth.getUser(), 2500, 'Supabase session refresh timed out')
   } catch (error) {
-    // Auth refresh must never turn the public homepage into a 500 error.
-    console.error('[SideQuest] Supabase session refresh failed:', error)
+    console.warn('[SideQuest] session refresh skipped:', error)
   }
 
   return response
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: [
+    '/profile/:path*',
+    '/saved/:path*',
+    '/account/:path*',
+    '/quest/:path*',
+    '/auth/callback/:path*',
+    '/auth/confirm/:path*',
+  ],
 }
