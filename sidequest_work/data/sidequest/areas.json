@@ -1,0 +1,142 @@
+{
+  "victoria": {
+    "id": "victoria",
+    "name": "Victoria",
+    "slug": "victoria",
+    "city": "London",
+    "centreLatitude": 51.4966,
+    "centreLongitude": -0.1437,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "shoreditch": {
+    "id": "shoreditch",
+    "name": "Shoreditch",
+    "slug": "shoreditch",
+    "city": "London",
+    "centreLatitude": 51.5265,
+    "centreLongitude": -0.0815,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "south-bank": {
+    "id": "south-bank",
+    "name": "South Bank",
+    "slug": "south-bank",
+    "city": "London",
+    "centreLatitude": 51.5055,
+    "centreLongitude": -0.1132,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "soho": {
+    "id": "soho",
+    "name": "Soho",
+    "slug": "soho",
+    "city": "London",
+    "centreLatitude": 51.5137,
+    "centreLongitude": -0.131,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "covent-garden": {
+    "id": "covent-garden",
+    "name": "Covent Garden",
+    "slug": "covent-garden",
+    "city": "London",
+    "centreLatitude": 51.5117,
+    "centreLongitude": -0.124,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "camden": {
+    "id": "camden",
+    "name": "Camden",
+    "slug": "camden",
+    "city": "London",
+    "centreLatitude": 51.539,
+    "centreLongitude": -0.1426,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "brixton": {
+    "id": "brixton",
+    "name": "Brixton",
+    "slug": "brixton",
+    "city": "London",
+    "centreLatitude": 51.4613,
+    "centreLongitude": -0.1156,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "greenwich": {
+    "id": "greenwich",
+    "name": "Greenwich",
+    "slug": "greenwich",
+    "city": "London",
+    "centreLatitude": 51.4826,
+    "centreLongitude": -0.0077,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "greenwich-peninsula": {
+    "id": "greenwich-peninsula",
+    "name": "Greenwich Peninsula",
+    "slug": "greenwich-peninsula",
+    "city": "London",
+    "centreLatitude": 51.5005,
+    "centreLongitude": 0.0037,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "north-greenwich": {
+    "id": "north-greenwich",
+    "name": "North Greenwich",
+    "slug": "north-greenwich",
+    "city": "London",
+    "centreLatitude": 51.5008,
+    "centreLongitude": 0.0032,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "notting-hill": {
+    "id": "notting-hill",
+    "name": "Notting Hill",
+    "slug": "notting-hill",
+    "city": "London",
+    "centreLatitude": 51.5099,
+    "centreLongitude": -0.2057,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "canary-wharf": {
+    "id": "canary-wharf",
+    "name": "Canary Wharf",
+    "slug": "canary-wharf",
+    "city": "London",
+    "centreLatitude": 51.5054,
+    "centreLongitude": -0.0235,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "islington": {
+    "id": "islington",
+    "name": "Islington",
+    "slug": "islington",
+    "city": "London",
+    "centreLatitude": 51.5362,
+    "centreLongitude": -0.1033,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  },
+  "hackney": {
+    "id": "hackney",
+    "name": "Hackney",
+    "slug": "hackney",
+    "city": "London",
+    "centreLatitude": 51.545,
+    "centreLongitude": -0.0553,
+    "initialRadiusKm": 1.5,
+    "maximumRadiusKm": 5
+  }
+}

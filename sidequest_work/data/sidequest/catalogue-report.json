@@ -1,0 +1,142 @@
+[
+  {
+    "area": "Victoria",
+    "total": 500,
+    "food": 231,
+    "drinks": 90,
+    "games_entertainment": 29,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 406
+  },
+  {
+    "area": "Shoreditch",
+    "total": 500,
+    "food": 229,
+    "drinks": 90,
+    "games_entertainment": 31,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 427
+  },
+  {
+    "area": "South Bank",
+    "total": 500,
+    "food": 223,
+    "drinks": 90,
+    "games_entertainment": 37,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 416
+  },
+  {
+    "area": "Soho",
+    "total": 500,
+    "food": 224,
+    "drinks": 90,
+    "games_entertainment": 36,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 420
+  },
+  {
+    "area": "Covent Garden",
+    "total": 500,
+    "food": 225,
+    "drinks": 90,
+    "games_entertainment": 35,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 419
+  },
+  {
+    "area": "Camden",
+    "total": 500,
+    "food": 233,
+    "drinks": 90,
+    "games_entertainment": 27,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 399
+  },
+  {
+    "area": "Brixton",
+    "total": 500,
+    "food": 253,
+    "drinks": 90,
+    "games_entertainment": 8,
+    "active": 79,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 379
+  },
+  {
+    "area": "Greenwich",
+    "total": 500,
+    "food": 258,
+    "drinks": 90,
+    "games_entertainment": 4,
+    "active": 78,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 394
+  },
+  {
+    "area": "Greenwich Peninsula",
+    "total": 500,
+    "food": 254,
+    "drinks": 90,
+    "games_entertainment": 6,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 400
+  },
+  {
+    "area": "North Greenwich",
+    "total": 500,
+    "food": 254,
+    "drinks": 90,
+    "games_entertainment": 6,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 401
+  },
+  {
+    "area": "Notting Hill",
+    "total": 500,
+    "food": 245,
+    "drinks": 90,
+    "games_entertainment": 15,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 370
+  },
+  {
+    "area": "Canary Wharf",
+    "total": 500,
+    "food": 244,
+    "drinks": 90,
+    "games_entertainment": 16,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 427
+  },
+  {
+    "area": "Islington",
+    "total": 500,
+    "food": 229,
+    "drinks": 90,
+    "games_entertainment": 31,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 418
+  },
+  {
+    "area": "Hackney",
+    "total": 500,
+    "food": 244,
+    "drinks": 90,
+    "games_entertainment": 16,
+    "active": 80,
+    "outdoor": 70,
+    "withFullAddressAndPostcode": 416
+  }
+]
