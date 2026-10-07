@@ -49,6 +49,7 @@ import {
 } from '@/lib/mockData'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { withTimeout } from '@/lib/supabase/safe'
 const LiveMap = dynamic(() => import('@/components/live-map'), { ssr: false })
 
 const navItems = [
@@ -148,14 +149,34 @@ function Generator({ compact = false, onGenerated }: { compact?: boolean; onGene
 
   const toggleVibe = (vibe: string) => setVibes((current) => current.includes(vibe) ? current.filter((item) => item !== vibe) : [...current, vibe])
   const generate = async () => {
-    if (!area || vibes.length === 0) { setError('Choose a London area and at least one vibe before generating your SideQuest.'); return }
-    const { data } = await createClient().auth.getUser()
-    if (!data.user) {
+    if (!area || vibes.length === 0) {
+      setError('Choose a London area and at least one vibe before generating your SideQuest.')
+      return
+    }
+
+    setError('')
+    setAuthRequired(false)
+
+    try {
+      const supabase = createClient()
+      const sessionResult = await withTimeout(
+        supabase.auth.getSession(),
+        3000,
+        'Login check timed out',
+      )
+
+      if (!sessionResult.data.session?.user) {
+        sessionStorage.setItem('sidequest-pending', JSON.stringify({ location, area, budget, time, people, transport, vibes, intent }))
+        setAuthRequired(true)
+        return
+      }
+    } catch {
       sessionStorage.setItem('sidequest-pending', JSON.stringify({ location, area, budget, time, people, transport, vibes, intent }))
       setAuthRequired(true)
       return
     }
-    setError(''); setAuthRequired(false); setLoading(true)
+
+    setLoading(true)
     try {
       const previous = sessionStorage.getItem('sidequest-current')
       let excludePlaceIds: string[] = []
@@ -163,16 +184,35 @@ function Generator({ compact = false, onGenerated }: { compact?: boolean; onGene
         const parsed = previous ? JSON.parse(previous) as { steps?: Array<{ placeId?: string }> } : null
         excludePlaceIds = parsed?.steps?.map((step) => step.placeId).filter((id): id is string => Boolean(id)) ?? []
       } catch { /* ignore */ }
+
       sessionStorage.setItem('sidequest-pending', JSON.stringify({ location, area, budget, time, people, transport, vibes, intent }))
-      const response = await fetch('/api/quests/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ location, area, budget, time, people, transport, vibes, intent, excludePlaceIds }) })
-      const payload = await response.json() as { quest?: Quest; error?: string }
-      if (!response.ok || !payload.quest) throw new Error(payload.error ?? 'We could not build your SideQuest.')
-      sessionStorage.setItem('sidequest-current', JSON.stringify(payload.quest))
-      onGenerated?.(payload.quest)
-      if (!onGenerated) router.push('/quest')
+
+      const controller = new AbortController()
+      const timeout = window.setTimeout(() => controller.abort(), 20000)
+      try {
+        const response = await fetch('/api/quests/generate', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ location, area, budget, time, people, transport, vibes, intent, excludePlaceIds }),
+          signal: controller.signal,
+        })
+        const payload = await response.json() as { quest?: Quest; error?: string }
+        if (!response.ok || !payload.quest) throw new Error(payload.error ?? 'We could not build your SideQuest.')
+        sessionStorage.setItem('sidequest-current', JSON.stringify(payload.quest))
+        onGenerated?.(payload.quest)
+        if (!onGenerated) router.push('/quest')
+      } finally {
+        window.clearTimeout(timeout)
+      }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'We could not build your SideQuest.')
-    } finally { setLoading(false) }
+      if (cause instanceof DOMException && cause.name === 'AbortError') {
+        setError('That took too long. Please try again — the page is still working.')
+      } else {
+        setError(cause instanceof Error ? cause.message : 'We could not build your SideQuest.')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   return <div className={cn('rounded-[28px] bg-white p-5 shadow-[0_25px_80px_rgba(15,28,36,0.16)] sm:p-7', compact ? 'max-w-2xl' : 'w-full')}>
