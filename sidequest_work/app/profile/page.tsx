@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Bookmark, CircleUserRound, History, LoaderCircle, LogOut, Save, Sparkles, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { withTimeout } from '@/lib/supabase/safe'
 
 type Profile = { display_name: string | null; avatar_url: string | null; home_city: string | null; preferred_transport: string | null; typical_budget: number | null; walking_distance: number | null }
 type QuestRow = { id: string; title: string; area: string; budget: number; time_minutes: number; vibes: string[]; created_at: string }
@@ -23,31 +24,62 @@ export default function ProfilePage() {
   useEffect(() => { void load() }, [])
 
   async function load() {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.replace('/auth?next=/profile'); return }
-    setEmail(user.email ?? '')
-    const [{ data: p }, { data: q }, { count }, { data: sub }] = await Promise.all([
-      supabase.from('profiles').select('display_name,avatar_url,home_city,preferred_transport,typical_budget,walking_distance').eq('id', user.id).maybeSingle(),
-      supabase.from('quests').select('id,title,area,budget,time_minutes,vibes,created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(8),
-      supabase.from('saved_quests').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-      supabase.from('subscriptions').select('plan,quests_used').eq('user_id', user.id).maybeSingle(),
-    ])
-    if (p) setProfile({ ...profile, ...p })
-    setQuests(q ?? [])
-    setSavedCount(count ?? 0)
-    if (sub) setFreeRemaining(sub.plan === 'free' ? Math.max(0, 1 - (sub.quests_used ?? 0)) : null)
-    setLoading(false)
+    try {
+      const supabase = createClient()
+      const session = await withTimeout(supabase.auth.getSession(), 3000, 'Login check timed out')
+      const user = session.data.session?.user
+      if (!user) {
+        router.replace('/auth?next=/profile')
+        return
+      }
+
+      setEmail(user.email ?? '')
+
+      const results = await withTimeout(
+        Promise.all([
+          supabase.from('profiles').select('display_name,avatar_url,home_city,preferred_transport,typical_budget,walking_distance').eq('id', user.id).maybeSingle(),
+          supabase.from('quests').select('id,title,area,budget,time_minutes,vibes,created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(8),
+          supabase.from('saved_quests').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+          supabase.from('subscriptions').select('plan,quests_used').eq('user_id', user.id).maybeSingle(),
+        ]),
+        6000,
+        'Account data took too long to load',
+      )
+
+      const [{ data: p }, { data: q }, { count }, { data: sub }] = results
+      if (p) setProfile((current) => ({ ...current, ...p }))
+      setQuests(q ?? [])
+      setSavedCount(count ?? 0)
+      if (sub) setFreeRemaining(sub.plan === 'free' ? Math.max(0, 1 - (sub.quests_used ?? 0)) : null)
+    } catch {
+      setMessage('Account data could not load right now. Try again in a moment.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function saveProfile() {
-    setSaving(true); setMessage('')
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/auth?next=/profile'); return }
-    const { error } = await supabase.from('profiles').upsert({ id: user.id, ...profile, home_city: 'London', updated_at: new Date().toISOString() })
-    setMessage(error ? 'Could not save your profile yet.' : 'Profile saved.')
-    setSaving(false)
+    setSaving(true)
+    setMessage('')
+    try {
+      const supabase = createClient()
+      const session = await withTimeout(supabase.auth.getSession(), 3000, 'Login check timed out')
+      const user = session.data.session?.user
+      if (!user) {
+        router.push('/auth?next=/profile')
+        return
+      }
+      const result = await withTimeout(
+        supabase.from('profiles').upsert({ id: user.id, ...profile, home_city: 'London', updated_at: new Date().toISOString() }),
+        5000,
+        'Saving profile took too long',
+      )
+      setMessage(result.error ? 'Could not save your profile yet.' : 'Profile saved.')
+    } catch {
+      setMessage('Could not save your profile yet.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function signOut() {
