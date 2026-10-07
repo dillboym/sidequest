@@ -46,9 +46,18 @@ function mapFeature(feature: Record<string, unknown>): PlaceRecord {
 
 async function request(path: string, params: URLSearchParams) {
   params.set('apiKey', apiKey())
-  const response = await fetch(`${GEOAPIFY_URL}${path}?${params.toString()}`, { cache: 'no-store' })
-  if (!response.ok) throw new Error(`Geoapify request failed: ${response.status}`)
-  return response.json() as Promise<{ features?: Record<string, unknown>[] }>
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 8000)
+  try {
+    const response = await fetch(`${GEOAPIFY_URL}${path}?${params.toString()}`, {
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+    if (!response.ok) throw new Error(`Geoapify request failed: ${response.status}`)
+    return response.json() as Promise<{ features?: Record<string, unknown>[] }>
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export const geoapifyPlacesProvider: PlaceProvider = {
