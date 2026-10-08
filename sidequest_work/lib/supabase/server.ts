@@ -1,18 +1,15 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-function cleanEnv(value?: string) {
-  if (!value) return ''
-  const trimmed = value.trim().replace(/^['"]|['"]$/g, '')
-  return trimmed.includes('=') ? trimmed.slice(trimmed.indexOf('=') + 1).trim().replace(/^['"]|['"]$/g, '') : trimmed
-}
+import { resolveSupabaseUrl, resolveSupabaseKey } from './config.mjs'
 
 export async function createClient() {
   const cookieStore = await cookies()
-  const supabaseUrl = cleanEnv(process.env.SUPABASE_URL) || cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL)
-  const supabaseKey =
-    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) ||
-    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  const supabaseUrl = resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_URL)
+  const supabaseKey = resolveSupabaseKey(
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  )
 
   if (!supabaseUrl || !/^https?:\/\//.test(supabaseUrl) || !supabaseKey) {
     throw new Error('Supabase is not configured correctly on this deployment.')

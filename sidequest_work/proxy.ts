@@ -2,30 +2,18 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { withTimeout } from '@/lib/supabase/safe'
 
-function cleanEnv(value?: string) {
-  if (!value) return ''
-  const trimmed = value.trim().replace(/^['"]|['"]$/g, '')
-  return trimmed.includes('=') ? trimmed.slice(trimmed.indexOf('=') + 1).trim().replace(/^['"]|['"]$/g, '') : trimmed
-}
-
-function isValidHttpUrl(value: string) {
-  try {
-    const url = new URL(value)
-    return url.protocol === 'https:' || url.protocol === 'http:'
-  } catch {
-    return false
-  }
-}
+import { resolveSupabaseUrl, resolveSupabaseKey } from '@/lib/supabase/config.mjs'
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
-  const supabaseUrl = cleanEnv(process.env.SUPABASE_URL) || cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL)
-  const supabaseKey =
-    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) ||
-    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  const supabaseUrl = resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_URL)
+  const supabaseKey = resolveSupabaseKey(
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  )
 
-  if (!isValidHttpUrl(supabaseUrl) || !supabaseKey) {
+  if (!supabaseUrl || !supabaseKey) {
     return response
   }
 

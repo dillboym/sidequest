@@ -83,9 +83,15 @@ export default function ProfilePage() {
   }
 
   async function signOut() {
-    await createClient().auth.signOut()
-    router.push('/')
-    router.refresh()
+    setMessage('')
+    try {
+      const { error } = await createClient().auth.signOut()
+      if (error) throw error
+      router.push('/')
+      router.refresh()
+    } catch {
+      setMessage('Could not log out. Please try again once the connection and login configuration are available.')
+    }
   }
 
   if (loading) return <main className="grid min-h-screen place-items-center bg-[#111b24] text-white"><LoaderCircle className="size-8 animate-spin text-[#e9ff65]" /></main>
