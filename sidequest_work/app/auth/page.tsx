@@ -8,17 +8,19 @@ import { createClient } from '@/lib/supabase/client'
 
 function friendlyError(message: string) {
   const lower = message.toLowerCase()
-  if (lower.includes('already registered') || lower.includes('already been registered')) return 'That email already has an account. Try logging in instead.'
-  if (lower.includes('password')) return 'Use a password with at least 6 characters.'
-  if (lower.includes('email')) return 'Enter a valid email address.'
   if (lower.includes('rate limit')) return 'Too many attempts. Please wait a moment and try again.'
+  if (lower.includes('email not confirmed')) return 'Confirm your email using the link in your inbox before logging in.'
+  if (lower.includes('invalid login credentials') || lower.includes('already registered') || lower.includes('already been registered')) return 'Unable to sign in or create an account with these details. Check your email and password.'
+  if (lower.includes('weak password') || lower.includes('password should')) return 'Use a stronger password with at least 6 characters.'
+  if (lower.includes('email address') && lower.includes('invalid')) return 'Enter a valid email address.'
   if (lower.includes('provider')) return 'Google login is not configured for this project yet.'
   return 'We could not complete that request. Check your details and try again.'
 }
 
 function AuthContent() {
   const searchParams = useSearchParams()
-  const next = searchParams.get('next')?.startsWith('/') ? searchParams.get('next')! : '/generate'
+  const requestedNext = searchParams.get('next') ?? '/generate'
+  const next = requestedNext.startsWith('/') && !requestedNext.startsWith('//') && !requestedNext.includes('\\') ? requestedNext : '/generate'
   const [mode, setMode] = useState<'signup' | 'login'>('signup')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,7 +39,7 @@ function AuthContent() {
     try {
       const supabase = createClient()
       const result = mode === 'signup'
-        ? await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` } })
+        ? await supabase.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ?? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` } })
         : await supabase.auth.signInWithPassword({ email: email.trim(), password })
       if (result.error) { setError(friendlyError(result.error.message)); return }
       if (mode === 'signup' && !result.data.session) { setMessage('Check your inbox for a verification link. Once confirmed, log in to continue.'); return }
@@ -54,7 +56,7 @@ function AuthContent() {
     setMessage('')
     setBusy(true)
     try {
-      const { error: oauthError } = await createClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` } })
+      const { error: oauthError } = await createClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ?? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` } })
       if (oauthError) setError(friendlyError(oauthError.message))
     } catch {
       setError('Authentication is currently unavailable. Please try again once the connection and login configuration are available.')
