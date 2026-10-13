@@ -1,7 +1,8 @@
 import SideQuestApp from '@/components/sidequest-app'
+import { getFeaturedPlaces } from '@/lib/sidequest/featured'
 
 export default function Page() {
-  return <SideQuestApp />
+  return <SideQuestApp featuredPlaces={getFeaturedPlaces()} />
 }
 
 export const metadata = {

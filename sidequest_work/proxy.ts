@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { withTimeout } from '@/lib/supabase/safe'
+import { SESSION_PREFERENCE, sessionCookieOptions } from '@/lib/supabase/session-policy'
 
 import { resolveSupabaseUrl, resolveSupabaseKey } from '@/lib/supabase/config.mjs'
 
@@ -26,7 +27,7 @@ export async function proxy(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, sessionCookieOptions(options, request.cookies.get(SESSION_PREFERENCE)?.value !== 'no')))
         },
       },
     })
@@ -38,6 +39,7 @@ export async function proxy(request: NextRequest) {
     console.warn('[SideQuest] session refresh skipped:', error)
   }
 
+  response.headers.set('Cache-Control', 'private, no-store')
   return response
 }
 
