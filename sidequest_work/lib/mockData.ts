@@ -241,7 +241,8 @@ export const BUDGET_OPTIONS = [
   { id: '5', label: '£5', value: 5 },
   { id: '10', label: '£10', value: 10 },
   { id: '20', label: '£20', value: 20 },
-  { id: '50', label: '£50+', value: 50 },
+  { id: '50', label: '£50', value: 50 },
+  { id: '100', label: '£100', value: 100 },
 ]
 
 export const TIME_OPTIONS = [

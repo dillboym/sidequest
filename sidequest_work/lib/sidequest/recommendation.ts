@@ -46,6 +46,7 @@ export function scoreCandidate(place: NormalizedCataloguePlace, options: {
   excludePlaceIds?: string[]
 }) {
   const intents = placeIntents(place)
+  if ((place.estimatedPriceMin ?? 0) > options.budget) return -10_000
   if (options.intent !== 'SURPRISE' && !intents.includes(options.intent)) return -10_000
   if (options.excludePlaceIds?.includes(place.id)) return -5_000
 

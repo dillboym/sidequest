@@ -122,8 +122,19 @@ export async function POST(request: Request) {
       }
     }
 
+    const { data: profile } = await withTimeout(
+      supabase.from('profiles').select('age_range').eq('id', user.id).maybeSingle(),
+      4000,
+      'Age preference check took too long',
+    ).catch(() => ({ data: null }))
+    const minimumProfileAge = Number(profile?.age_range?.match(/^\s*(\d+)/)?.[1] ?? 0)
+    const isAdult = minimumProfileAge >= 18 && !/under/i.test(profile?.age_range ?? '')
+    if (!isAdult && (intent === 'DRINKS' || intent === 'NIGHTLIFE')) {
+      return NextResponse.json({ error: 'Set an adult age range in your profile to include drinks or nightlife.' }, { status: 422 })
+    }
+
     let candidates = getAreaPlaces(area.name)
-      .filter((place) => place.usable)
+      .filter((place) => place.usable && (!place.minimumAge || minimumProfileAge >= place.minimumAge) && (isAdult || !(place.adultRestricted || place.adultOrRestricted)))
       .map(normalizeCataloguePlace)
       .filter((place): place is NormalizedCataloguePlace => Boolean(place))
 
@@ -141,6 +152,7 @@ export async function POST(request: Request) {
     }
 
     const scored = candidates
+      .filter(place => isAdult || !placeIntents(place).some(value => value === 'DRINKS' || value === 'NIGHTLIFE'))
       .map((place) => ({ place, score: scoreCandidate(place, { intent, vibes, budget, excludePlaceIds: body.excludePlaceIds }) }))
       .filter(({ place, score }) => score > -1000 && visitDurationFor(place, duration) > 0)
       .sort((a, b) => b.score - a.score)
@@ -153,14 +165,18 @@ export async function POST(request: Request) {
     const desiredStops = duration <= 60 ? 1 : duration <= 180 ? 2 : duration <= 300 ? 3 : 4
     const selected: Array<{ place: NormalizedCataloguePlace; duration: number }> = []
     let remaining = duration
+    let remainingBudget = budget
     for (const { place } of scored) {
       if (selected.length >= desiredStops) break
+      const estimatedCost = place.estimatedPriceMax ?? place.estimatedPriceMin ?? 0
+      if (estimatedCost > remainingBudget) continue
       const visit = visitDurationFor(place, remaining)
       if (!visit) continue
       // Reserve a small inter-stop allowance after the first stop.
       const reserve = selected.length === 0 ? 0 : 10
       if (visit + reserve > remaining) continue
       selected.push({ place, duration: visit })
+      remainingBudget -= estimatedCost
       remaining -= visit + reserve
     }
     if (!selected.length) return NextResponse.json({ error: `We couldn't build a SideQuest that genuinely fits into ${duration} minutes.` }, { status: 422 })

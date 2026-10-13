@@ -41,6 +41,9 @@ export type CataloguePlace = {
   outdoor: boolean | null
   quality: string
   usable: boolean
+  minimumAge?: number | null
+  adultRestricted?: boolean
+  adultOrRestricted?: boolean
 }
 
 export type CatalogueArea = {
